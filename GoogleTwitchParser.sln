@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32901.215
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoogleTwitchParser", "GoogleTwitchParser\GoogleTwitchParser.csproj", "{89183F21-3D73-4D09-A3E8-C62C66F139FD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoogleTwitchParser.Services", "GoogleTwitchParser.Services\GoogleTwitchParser.Services.csproj", "{8FC7A1D5-F229-490B-9E25-D0901DB16759}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoogleTwitchParser.Models", "GoogleTwitchParser.Models\GoogleTwitchParser.Models.csproj", "{26ABDBAF-2A2F-4559-AF0C-EEE5203EEDDE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{89183F21-3D73-4D09-A3E8-C62C66F139FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89183F21-3D73-4D09-A3E8-C62C66F139FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89183F21-3D73-4D09-A3E8-C62C66F139FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89183F21-3D73-4D09-A3E8-C62C66F139FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8FC7A1D5-F229-490B-9E25-D0901DB16759}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8FC7A1D5-F229-490B-9E25-D0901DB16759}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8FC7A1D5-F229-490B-9E25-D0901DB16759}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8FC7A1D5-F229-490B-9E25-D0901DB16759}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26ABDBAF-2A2F-4559-AF0C-EEE5203EEDDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26ABDBAF-2A2F-4559-AF0C-EEE5203EEDDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26ABDBAF-2A2F-4559-AF0C-EEE5203EEDDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26ABDBAF-2A2F-4559-AF0C-EEE5203EEDDE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E5A1D336-9012-49BB-8416-E15AEB81D733}
+	EndGlobalSection
+EndGlobal

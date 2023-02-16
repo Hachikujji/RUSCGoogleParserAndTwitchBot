@@ -27,6 +27,7 @@ public class App
         Console.WriteLine($"1. Старт");
         Console.WriteLine($"2. [{BoolToString(Variables.IsGoogleParserEnabled)}] Google Spreadsheets");
         Console.WriteLine($"3. [{BoolToString(Variables.IsTwitchParserEnabled)}] Twitch{twitchMode}");
+        Console.WriteLine("Настройки:");
         Console.WriteLine($"4. Время обновления: {Variables.Timer}мс");
         Console.WriteLine($"5. Обновить OAuth Token");
         Console.WriteLine($"6. Обновить ClientId");

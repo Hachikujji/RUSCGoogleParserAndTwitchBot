@@ -13,7 +13,10 @@ namespace GoogleTwitchParser.Services;
 public class GoogleSheetsService
 {
     private readonly static string[] _scopes = { SheetsService.Scope.Spreadsheets };
-    private static string _googleCredentialsFilePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cfg\\google-credentials.json");
+    private static readonly string _settingsFolderPath = AppDomain.CurrentDomain.BaseDirectory + "\\cfg";
+    private static string _googleCredentialsFileName = "google-credentials.json";
+    private static string _fullPath = Path.Combine(_settingsFolderPath, _googleCredentialsFileName);
+
     private static SheetsService? _sheetsService;
 
     public GoogleSheetsService()
@@ -49,9 +52,10 @@ public class GoogleSheetsService
 
     private SheetsService GetSheetsService()
     {
-        if (!File.Exists(_googleCredentialsFilePath))
+        Directory.CreateDirectory(_settingsFolderPath);
+        if (!File.Exists(_fullPath))
             throw new Exception("Google Credentials file is not provided. Please put it into cfg folder.");
-        using (var stream = new FileStream(_googleCredentialsFilePath, FileMode.Open, FileAccess.Read))
+        using (var stream = new FileStream(_fullPath, FileMode.Open, FileAccess.Read))
         {
             var serviceInitializer = new BaseClientService.Initializer
             {

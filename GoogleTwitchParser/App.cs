@@ -5,8 +5,8 @@ namespace GoogleTwitchParser;
 
 public class App
 {
-    private readonly static GoogleSheetsService _googleSheetsService = new();
-    private readonly static TwitchApiService _twitchApiService = new(Variables.ClientId,Variables.OAuthToken);
+    private static GoogleSheetsService? _googleSheetsService;
+    private static TwitchApiService? _twitchApiService;
 
     public App()
     {
@@ -15,6 +15,7 @@ public class App
     public async Task StartMainMenu()
     {
         Console.Clear();
+        _googleSheetsService = new();
         try
         {
             Helper.LoadDataFromJsonFile();
@@ -23,6 +24,7 @@ public class App
         {
             Console.WriteLine(e.Message);
         }
+        _twitchApiService = new(Variables.ClientId, Variables.OAuthToken);
         var twitchMode = Variables.IsTwitchParserEnabled ? $": {Variables.TwitchModeName}" : string.Empty;
         Console.WriteLine($"1. Старт");
         Console.WriteLine($"2. [{BoolToString(Variables.IsGoogleParserEnabled)}] Google Spreadsheets");

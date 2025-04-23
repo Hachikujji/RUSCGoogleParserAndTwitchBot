@@ -3,8 +3,10 @@ using Newtonsoft.Json;
 namespace GoogleTwitchParser.Models;
 public class Variables
 {
+    public static int TimerDefault {get;} = 10000;
+
     [JsonProperty]
-    public static int Timer { get; set; } = 10000;
+    public static int Timer { get; set; } = TimerDefault;
 
     // google
     public static bool IsGoogleParserEnabled { get; set; }

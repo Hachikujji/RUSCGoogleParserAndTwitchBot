@@ -3,7 +3,6 @@ using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
 using GoogleTwitchParser.Models;
-using System.Reflection;
 using static Google.Apis.Sheets.v4.SpreadsheetsResource;
 using static Google.Apis.Sheets.v4.SpreadsheetsResource.ValuesResource;
 
@@ -15,9 +14,10 @@ public class GoogleSheetsService
     private readonly static string[] _scopes = { SheetsService.Scope.Spreadsheets };
     private static readonly string _settingsFolderPath = AppDomain.CurrentDomain.BaseDirectory + "\\cfg";
     private static string _googleCredentialsFileName = "google-credentials.json";
-    private static string _fullPath = Path.Combine(_settingsFolderPath, _googleCredentialsFileName);
+    private static string _googleCredentialsPath = Path.Combine(_settingsFolderPath, _googleCredentialsFileName);
+    private static string _currentRowFolderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CURRENT");
 
-    private static SheetsService? _sheetsService;
+    private readonly SheetsService _sheetsService;
 
     public GoogleSheetsService()
     {
@@ -33,7 +33,7 @@ public class GoogleSheetsService
     public async Task<TableData> UpdateFileAsync(string sheetId, string sheetTitle)
     {
         var data = await GetDataAsync(_sheetsService.Spreadsheets.Values, sheetId, sheetTitle);
-        await SaveToFileAsync(data);
+        await SaveAllRecordsToFileAsync(data);
         return data;
     }
 
@@ -53,63 +53,64 @@ public class GoogleSheetsService
     private SheetsService GetSheetsService()
     {
         Directory.CreateDirectory(_settingsFolderPath);
-        if (!File.Exists(_fullPath))
+        if (!File.Exists(_googleCredentialsPath))
             throw new Exception("Google Credentials file is not provided. Please put it into cfg folder.");
-        using (var stream = new FileStream(_fullPath, FileMode.Open, FileAccess.Read))
+        using var stream = new FileStream(_googleCredentialsPath, FileMode.Open, FileAccess.Read);
+        var serviceInitializer = new BaseClientService.Initializer
         {
-            var serviceInitializer = new BaseClientService.Initializer
-            {
-                HttpClientInitializer = GoogleCredential.FromStream(stream).CreateScoped(_scopes)
-            };
-            return new SheetsService(serviceInitializer);
-        }
+            HttpClientInitializer = GoogleCredential.FromStream(stream).CreateScoped(_scopes)
+        };
+        return new SheetsService(serviceInitializer);
     }
 
-    private async Task SaveToFileAsync(TableData data)
+    private async Task SaveAllRecordsToFileAsync(TableData data, int take = 1 + 5)
     {
-        var path = AppDomain.CurrentDomain.BaseDirectory + "\\CURRENT";
-        var nextStatementPath = AppDomain.CurrentDomain.BaseDirectory + "\\NEXT";
-        Directory.CreateDirectory(path);
-        Directory.CreateDirectory(nextStatementPath);
-        var row = data.Rows.Where(x => x.Last().ToString() == "TRUE").ToList().LastOrDefault();
-        var nextRow = data.Rows.ElementAtOrDefault(data.Rows.IndexOf(row) + 1);
-        if (row == null)
+        if (data.CurrentRow == null)
             return;
-        var sceneName = row.ElementAt(row.Count - 2).ToString();
-        /////////////////////await ChangeSceneAsync(sceneName);
-        for (int k = 0; k < row.Count - 1; k++)
-        {
-            await File.WriteAllTextAsync(Path.Combine(path, data.Headers[k].ToString() + ".txt"), row[k].ToString());
-        }
 
-        if (nextRow == null)
+        // fill list with possible rows, if out of index then saves null. Must be handled in future. 
+        for (int i = data.CurrentRowIndex; i < data.CurrentRowIndex + take; i++)
         {
-            nextRow = new List<object>();
-            foreach (var item in row)
-            {
-                nextRow.Add("");
-            }
-        }
-        for (int k = 0; k < nextRow.Count - 1; k++)
-        {
-            await File.WriteAllTextAsync(Path.Combine(nextStatementPath, data.Headers[k].ToString() + ".txt"), nextRow[k].ToString());
+            var row = data.Rows.ElementAtOrDefault(i);
+            await SaveToFileAsync(data.Headers, row, MakeNextPathString(i - data.CurrentRowIndex));
         }
     }
+
+    private async Task SaveToFileAsync(List<object>? headers, List<object>? row, string path)
+    {
+        Directory.CreateDirectory(path);
+        for (int i = 0; i < headers.Count - 1; i++)
+        {
+            await File.WriteAllTextAsync(Path.Combine(path, headers[i] + ".txt"), row is not null ? row[i].ToString() : string.Empty);
+        }
+
+    }
+
+    private string MakeNextPathString(int position) => position == 0 ? _currentRowFolderPath : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"NEXT[{position}]");
 
     private static async Task<TableData> GetDataAsync(ValuesResource valuesResource, string sheetId, string sheetTitle)
     {
         var data = new TableData();
         try
         {
+            // call api request to google
             var response = await valuesResource.Get(sheetId, sheetTitle).ExecuteAsync();
             var values = response.Values;
-            data.Headers = values.FirstOrDefault().ToList();
-            data.Rows = values.Skip(1).Select(r => r.ToList()).ToList();
-            var currentRow = data.Rows.Where(x => x.Last().ToString() == "TRUE").ToList().LastOrDefault();
-            if(currentRow != null)
-                data.CurrentRow = data.Rows.IndexOf(currentRow);
-            // max length
+            var headers = values.FirstOrDefault();
+            if (headers is null)
+                throw new Exception("Unable to receive sheet headers.");
+            data.Headers = headers.ToList() ?? new();
             data.HeaderMaxLength = data.Headers.Select(c => ((string)c).Length).Max();
+            data.Rows = values.Skip(1).Select(r => r.ToList()).ToList();
+            data.Rows.RemoveAll(list => !list.Any());
+
+            var currentRow = data.Rows.LastOrDefault(row => row.Any(cell => cell.ToString() == "TRUE"));
+
+            if(currentRow != null)
+            {
+                data.CurrentRowIndex = data.Rows.IndexOf(currentRow);
+                data.CurrentRow = currentRow;
+            }
         }
         catch (Exception e)
         {
@@ -117,13 +118,15 @@ public class GoogleSheetsService
         }
         return data;
     }
+
     public async Task<List<object>> GetHeadersAsync(string sheetId, string sheetTitle)
     {
         try
         {
             var response = await _sheetsService.Spreadsheets.Values.Get(sheetId, sheetTitle).ExecuteAsync();
             var values = response.Values;
-            return values.FirstOrDefault().ToList();
+            var headers = values.FirstOrDefault();
+            return headers is not null ? headers.ToList() : new();
         }
         catch (Exception e)
         {
@@ -131,7 +134,8 @@ public class GoogleSheetsService
         }
     }
 
-    public static async Task SetFlagOnGameChange(string sheetId, string sheetTitle, string gameName)
+    // UNUSED FEATURE. Needs discussion
+    /*public static async Task SetFlagOnGameChange(string sheetId, string sheetTitle, string gameName)
     {
         var response = await _sheetsService.Spreadsheets.Values.Get(sheetId, sheetTitle).ExecuteAsync();
         var row = response.Values.Where( row => row.Contains(gameName) && row.LastOrDefault() as string != "TRUE").FirstOrDefault();
@@ -156,5 +160,5 @@ public class GoogleSheetsService
             updateRequest.Execute();
         }
 
-    }
+    }*/
 }

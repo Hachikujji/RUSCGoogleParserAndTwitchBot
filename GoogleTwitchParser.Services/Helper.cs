@@ -1,33 +1,31 @@
 ﻿using GoogleTwitchParser.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.IO;
-using System.Reflection;
 
 namespace GoogleTwitchParser.Services;
 
 public static class Helper
 {
     private static readonly string _settingsFileName = "settings.json";
-    private static readonly string _settingsFolderPath = AppDomain.CurrentDomain.BaseDirectory + "\\cfg";
-    private static readonly string _fullPath = Path.Combine(_settingsFolderPath, _settingsFileName);
+    private static readonly string _settingsFolderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cfg");
+    private static readonly string _settingsFullPath = Path.Combine(_settingsFolderPath, _settingsFileName);
 
     public static void LoadDataFromJsonFile()
     {
         try
         {
-            if (!File.Exists(_fullPath))
+            if (!File.Exists(_settingsFullPath))
                 throw GetExceptionWithProperVariableName("OAuth Token and ClientId");
-            string jsonString = String.Join('\n', File.ReadAllLines(_fullPath));
+            string jsonString = string.Join('\n', File.ReadAllLines(_settingsFullPath));
             dynamic json = JObject.Parse(jsonString);
 
             Variables.OAuthToken = string.IsNullOrEmpty(json.OAuthToken.ToString()) ? throw GetExceptionWithProperVariableName(nameof(Variables.OAuthToken)) : json.OAuthToken;
             Variables.ClientId = string.IsNullOrEmpty(json.ClientId.ToString()) ? throw GetExceptionWithProperVariableName(nameof(Variables.ClientId)) : json.ClientId;
-            Variables.Timer = json.Timer is null || json.Timer == 0 ? 10000 : json.Timer;
+            Variables.Timer = json.Timer is null || json.Timer == 0 ? Variables.TimerDefault : json.Timer;
         }
-        catch (Exception)
+        catch (Exception e)
         {
-            throw ;
+            throw new Exception($"Failure to load settings from file.. {e.Message}");
         }
     }
 
@@ -37,11 +35,11 @@ public static class Helper
         {
             Directory.CreateDirectory(_settingsFolderPath);
             var json = JsonConvert.SerializeObject(variables);
-            await File.WriteAllTextAsync(_fullPath,json);
+            await File.WriteAllTextAsync(_settingsFullPath,json);
         }
-        catch (Exception)
+        catch (Exception e)
         {
-            throw new Exception("Failure to save settings to file..");
+            throw new Exception($"Failure to save settings to file: {e.Message}");
         }
     }
 

@@ -7,9 +7,12 @@ public class App
 {
     private static GoogleSheetsService? _googleSheetsService;
     private static TwitchApiService? _twitchApiService;
+    //private static TwitchChatService? _twitchChatService;
 
     public App()
     {
+        /*_twitchChatService = new();
+        _twitchChatService.Start();*/
     }
 
     public async Task StartMainMenu()
@@ -29,7 +32,7 @@ public class App
         Console.WriteLine($"1. Старт");
         Console.WriteLine($"2. [{BoolToString(Variables.IsGoogleParserEnabled)}] Google Spreadsheets");
         Console.WriteLine($"3. [{BoolToString(Variables.IsTwitchParserEnabled)}] Twitch{twitchMode}");
-        Console.WriteLine("Настройки:");
+        Console.WriteLine("\nНастройки:");
         Console.WriteLine($"4. Время обновления: {Variables.Timer}мс");
         Console.WriteLine($"5. Обновить OAuth Token");
         Console.WriteLine($"6. Обновить ClientId");
@@ -63,7 +66,7 @@ public class App
         Console.Clear();
         Console.WriteLine("Введите OAuth Token:");
         var token = Console.ReadLine();
-        Variables.OAuthToken = token;
+        Variables.OAuthToken = token ?? string.Empty;
         await Helper.SaveDataToJsonFileAsync(new Variables());
     }
     private async Task RefreshClientIdAsync()
@@ -71,18 +74,14 @@ public class App
         Console.Clear();
         Console.WriteLine("Введите ClientId:");
         var token = Console.ReadLine();
-        Variables.ClientId = token;
+        Variables.ClientId = token ?? string.Empty;
         await Helper.SaveDataToJsonFileAsync(new Variables());
     }
 
     private async Task GoogleSettingsMenu()
     {
-        var menuSecondPoint = "2. Выбрать Таблицу";
-        if (!string.IsNullOrWhiteSpace(Variables.SpreadSheetTitle))
-            menuSecondPoint = $"2. Таблица [{Variables.SpreadSheetTitle}]";
-        var menuThirdPoint = "3. Выбрать Лист";
-        if (!string.IsNullOrWhiteSpace(Variables.SheetTitle))
-            menuThirdPoint = $"3. Лист [{Variables.SheetTitle}]";
+        var menuSecondPoint = string.IsNullOrWhiteSpace(Variables.SpreadSheetTitle) ? "2. Выбрать Таблицу" : $"2. Таблица [{Variables.SpreadSheetTitle}]";
+        var menuThirdPoint = string.IsNullOrWhiteSpace(Variables.SheetTitle) ? "3. Выбрать Лист" : $"3. Лист [{Variables.SheetTitle}]";
 
         Console.Clear();
         Console.WriteLine($"1. Статус: [{BoolToString(Variables.IsGoogleParserEnabled)}]");
@@ -163,14 +162,14 @@ public class App
     {
         Console.Clear();
         Console.WriteLine("Введите свой никнейм:");
-        return Console.ReadLine();
+        return Console.ReadLine() ?? string.Empty;
     }
 
     private static string ChooseSpyTwitchUsernameMenu()
     {
         Console.Clear();
         Console.WriteLine("Введите никнейм канала с которого будем пиздить:");
-        return Console.ReadLine();
+        return Console.ReadLine() ?? string.Empty;
     }
 
     private static int TimerSettingsMenu()
@@ -256,8 +255,15 @@ public class App
                     {
                         table = await _googleSheetsService.UpdateFileAsync(Variables.SpreadSheetId, Variables.SheetTitle);
                         Console.WriteLine($"[{DateTimeOffset.Now.Hour}:{DateTimeOffset.Now.Minute}:{DateTimeOffset.Now.Second}] Текущая строка:");
-                        for (int i = 0; i < table.Headers.Count - 1; i++)
-                            Console.WriteLine($"{table.Headers[i].ToString().PadRight(table.HeaderMaxLength + 1)}: {table.Rows[table.CurrentRow][i]}");
+                        if(table.CurrentRowIndex == -1)
+                        {
+                            Console.WriteLine("Никакая не выбрана.");
+                        }
+                        else
+                        {
+                            for (int i = 0; i < table.Headers.Count - 1; i++)
+                                Console.WriteLine($"{table.Headers[i].ToString().PadRight(table.HeaderMaxLength + 1)}: {table.Rows[table.CurrentRowIndex][i]}");
+                        }
                     }
 
                     if (Variables.IsTwitchParserEnabled)
@@ -278,7 +284,7 @@ public class App
                                     if (table.Headers is null)
                                         table = await _googleSheetsService.UpdateFileAsync(Variables.SpreadSheetId, Variables.SheetTitle);
                                     var gameColumnIndex = table.Headers.FindIndex(header => header.Equals(Variables.GameColumn));
-                                    var gameName = table.Rows[table.CurrentRow][gameColumnIndex].ToString();
+                                    var gameName = table.Rows[table.CurrentRowIndex][gameColumnIndex].ToString();
                                     var settedGameName = await _twitchApiService.ChangeGameAsync(Variables.OAuthToken, Variables.MainChannelNickname, gameName);
                                     if (settedGameName is not null)
                                         Console.WriteLine($"[{DateTimeOffset.Now.Hour}:{DateTimeOffset.Now.Minute}:{DateTimeOffset.Now.Second}] Смена игры на {settedGameName}");
@@ -303,7 +309,7 @@ public class App
 
     private static string BoolToString(bool var)
     {
-        return var ? "✔️" : "❌";
+        return var ? "ON" : "OFF";
     }
 
 }
